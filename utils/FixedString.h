@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <cstring>
-
+#include <cassert>
 
 template<int maxLen>
 class FixedString

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <iomanip>
 
 template<class T>
 std::vector<T> parseFile(const std::string& filename, size_t expectedItems = 13000)
