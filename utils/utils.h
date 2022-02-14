@@ -6,10 +6,12 @@
 #include <iomanip>
 
 template<class T>
-std::vector<T> parseFile(const std::string& filename, size_t expectedItems = 13000)
+std::vector<T> parseFile(const std::string& filename, bool silent = false, size_t expectedItems = 13000)
 {
     std::vector<T> result;
-    std::cout << "Start loading list from file: " << std::endl << filename << std::endl;
+    if(!silent)
+        std::cout << "Start loading list from file: " << std::endl << filename << std::endl;
+
     auto tpBegin = std::chrono::system_clock::now();
     result.reserve(expectedItems);
     std::ifstream listFile(filename);
@@ -29,9 +31,12 @@ std::vector<T> parseFile(const std::string& filename, size_t expectedItems = 130
 
         double secondsElapsed = microsecondsElapsed / 1000000.0;
 
-        std::cout << "List loaded in " << std::setprecision(3) << std::fixed << secondsElapsed << " s" << std::endl;
-        std::cout << "List count: " << result.size() << std::endl;
-        std::cout << "Speed: " << std::setprecision(3) << fileSize / secondsElapsed / 1024 / 1024 << " MB/s" << std::endl;
+        if(!silent)
+        {
+            std::cout << "List loaded in " << std::setprecision(3) << std::fixed << secondsElapsed << " s" << std::endl;
+            std::cout << "List count: " << result.size() << std::endl;
+            std::cout << "Speed: " << std::setprecision(3) << fileSize / secondsElapsed / 1024 / 1024 << " MB/s" << std::endl;
+        }
 
     }
     else
