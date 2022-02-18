@@ -23,7 +23,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
 endif()
 
 file(GLOB_RECURSE Project_SOURCES "src/*.cpp")
-file(GLOB_RECURSE Project_HEADERS "src/*.h")
+file(GLOB_RECURSE Project_HEADERS "*.h")
 set (Project_INCLUDE_DIRS "")
 
 foreach (_headerFile ${Project_HEADERS})

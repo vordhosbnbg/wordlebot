@@ -1,0 +1,3 @@
+[submodule "utils/FixedString"]
+	path = utils/FixedString
+	url = git@github.com:vordhosbnbg/FixedString.git
