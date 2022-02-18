@@ -94,7 +94,7 @@ int main(int argc, char** argv)
                         // find all exact matches and store their count
                         for(uint32_t i = 0; i < 5; ++i)
                         {
-                            char userChar = userWord[i];
+                            const char& userChar = userWord[i];
                             if(userChar == word[i])
                             {
                                 output[i] = 'O';

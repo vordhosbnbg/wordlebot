@@ -37,7 +37,6 @@ std::vector<T> parseFile(const std::string& filename, bool silent = false, size_
             std::cout << "List count: " << result.size() << std::endl;
             std::cout << "Speed: " << std::setprecision(3) << fileSize / secondsElapsed / 1024 / 1024 << " MB/s" << std::endl;
         }
-
     }
     else
     {
@@ -45,3 +44,11 @@ std::vector<T> parseFile(const std::string& filename, bool silent = false, size_
     }
     return result;
 }
+
+
+template<class T>
+bool writeToFile(const T& object, const std::string& filename, bool silent = true)
+{
+
+}
+

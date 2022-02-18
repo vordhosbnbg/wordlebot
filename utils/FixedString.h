@@ -2,6 +2,7 @@
 #include <string>
 #include <cstring>
 #include <cassert>
+#include "MurmurHash3.h"
 
 template<int maxLen>
 class FixedString
@@ -36,6 +37,8 @@ public:
     FixedString(const FixedString& other) = default;
     FixedString(FixedString&& other) = default;
     ~FixedString(){}
+
+    friend struct std::hash<FixedString<maxLen>>;
 
     inline const char * c_str() const
     {
@@ -151,8 +154,28 @@ public:
 
     static const size_t npos = static_cast<size_t>(-1);
 
+    static constexpr size_t maxSize()
+    {
+        return maxLen;
+    }
+
 private:
     size_t currentLen;
     alignas(16) char array[arrSize];
 };
 
+namespace std
+{
+
+template <int maxLen>
+struct hash<FixedString<maxLen>>
+{
+    size_t operator()( const FixedString<maxLen>& objToHash ) const
+    {
+        size_t retVal;
+        MurmurHash3_x86_32(&objToHash.array, sizeof(FixedString<maxLen>::array), 0xDEADBEEF, &retVal);
+        return retVal;
+    }
+};
+
+}
