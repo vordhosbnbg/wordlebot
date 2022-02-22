@@ -1,3 +1,6 @@
 [submodule "utils/FixedString"]
 	path = utils/FixedString
 	url = git@github.com:vordhosbnbg/FixedString.git
+[submodule "utils/threadpool"]
+	path = utils/threadpool
+	url = git@github.com:vordhosbnbg/threadpool.git

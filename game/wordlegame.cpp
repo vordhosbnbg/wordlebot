@@ -91,6 +91,7 @@ int main(int argc, char** argv)
                     {
                         Word output("-----");
                         std::array<unsigned char, 26> matchedLetters{0};
+                        std::array<unsigned char, 26> yellowedLetters{0};
                         // find all exact matches and store their count
                         for(uint32_t i = 0; i < 5; ++i)
                         {
@@ -104,8 +105,11 @@ int main(int argc, char** argv)
                         for(uint32_t i = 0; i < 5; ++i)
                         {
                             char userChar = userWord[i];
-                            if(userChar != word[i] && word.count(userChar) > matchedLetters[userChar - 'A'])
+                            if(userChar != word[i] &&
+                                    word.count(userChar) > matchedLetters[userChar - 'A'] &&
+                                    word.count(userChar) > yellowedLetters[userChar - 'A'])
                             {
+                                ++yellowedLetters[userChar - 'A'];
                                 output[i] = 'o';
                             }
                             else if(word.count(userChar) == 0)

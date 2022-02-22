@@ -7,7 +7,9 @@
 #include <bitset>
 #include <cmath>
 #include <execution>
+#include <iostream>
 #include "FixedString.h"
+#include "threadpool.h"
 #include "boost/container/flat_set.hpp"
 #include "boost/container/flat_map.hpp"
 
@@ -28,17 +30,20 @@ public:
         letterMap.fill(fullAlphabet);
     }
 
-    inline bool checkTargetWordAgainstMap(const LetterMap& map, const Word& target)
+    inline bool checkTargetWordAgainstMap(const Word& target)
     {
         for(size_t i=0; i< Word::maxSize(); ++i)
         {
-            const AlphabetSet& alphabet = map[i];
+            const AlphabetSet& alphabet = letterMap[i];
             if(alphabet.size() == 26)
                 continue;
 
             if(alphabet.find(target[i]) == alphabet.end())
                 return false;
         }
+
+        satisfiesMusthaveRules(target);
+
         return true;
     }
 
@@ -66,56 +71,183 @@ public:
         return result;
     }
 
+    inline bool satisfiesMusthaveRules(const Word& word)
+    {
+        std::array<unsigned char, 26> mustHaveSet(mustHaveLetterSet);
+        if(!mustHaveSet.empty())
+        {
+            char val;
+            for(char i = 0; i < mustHaveSet.size(); ++i )
+            {
+                if(mustHaveSet[i] > 0)
+                {
+                    val = i + 'A';
+                    if(word.count(val) < mustHaveSet[i])
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     void generateWordmap()
     {
         wordMap.clear();
-        wordMap.reserve(allowedWords.size());
-        for(const Word& allowed : allowedWords)
+        wordMap.resize(allowedWords.size());
+        ThreadPool tPool;
+        tPool.start();
+        for(unsigned short aIdx = 0; aIdx < allowedWords.size(); ++aIdx)
         {
-            wordMap[allowed];
-        }
-        std::for_each(std::execution::seq, allowedWords.begin(), allowedWords.end(), [this](const Word& allowed)
-        {
-            for(unsigned short tgtIndex = 0; tgtIndex < targetWords.size(); ++tgtIndex)
+            tPool.push([this, aIdx]()
             {
-                const Word& target = targetWords[tgtIndex];
-                if(checkTargetWordAgainstMap(letterMap, target))
+                const Word& allowed = getAllowed(aIdx);
+                for(unsigned short tgtIndex = 0; tgtIndex < targetWords.size(); ++tgtIndex)
                 {
-                    Word matchPattern = getMatchPattern(allowed, target);
-                    ++wordMap[allowed][matchPattern];
+                    const Word& target = targetWords[tgtIndex];
+                    if(checkTargetWordAgainstMap(target))
+                    {
+                        Word matchPattern = getMatchPattern(allowed, target);
+                        ++wordMap[aIdx][matchPattern];
+                    }
                 }
-            }
-        });
+            });
+        }
+        tPool.waitUntilIdle();
+        tPool.start();
+        infoMap.clear();
+        infoMap.resize(allowedWords.size());
+        for(unsigned short aIdx = 0; aIdx < allowedWords.size(); ++aIdx)
+        {
+            tPool.push([this, aIdx]()
+            {
+                const std::unordered_map<Word, unsigned short>& allowedWordMap = wordMap[aIdx];
+                float totalInfo = 0.0f;
+
+                for(const std::pair<Word, unsigned short>& pattern : allowedWordMap)
+                {
+                    totalInfo += std::log2f((float)allowedWords.size()/(float)pattern.second);
+                }
+                totalInfo /= (float)allowedWordMap.size();
+                infoMap[aIdx] = totalInfo;
+            });
+        }
+        tPool.waitUntilIdle();
     }
 
     Word getBestWord()
     {
-        Word result;
+        Word result("CRANE");
         std::vector<std::pair<Word, unsigned int>> bestWords;
-//        for(const std::pair<Word, std::unordered_map<Word, std::atomic<unsigned short>>>& umap_pair :  wordMap)
-//        {
-//            unsigned int matchesPerAllowedWord = 0;
-//            for(const std::pair<Word, std::atomic<unsigned short>>& word_count_pair : umap_pair.second)
-//            {
-//                //matchesPerAllowedWord += word_count_pair.second;
-//            }
-//        }
+        unsigned short bestIndex = -1;
+        float bestValue = 0;
+        std::multimap<float, Word> sortedWords;
+        for(unsigned short idx = 0; idx < infoMap.size(); ++idx)
+        {
+            sortedWords.emplace(infoMap[idx], allowedWords[idx]);
+        }
 
+        unsigned int nbWords = 5;
+        for(auto it = sortedWords.rbegin(); it != sortedWords.rend(); ++it)
+        {
+            std::cout << it->second.c_str() << " " << it->first << std::endl;
+            if(!--nbWords)
+                break;
+        }
+
+        result = sortedWords.rbegin()->second;
         return result;
+    }
+
+    void addAttempt(const Word attempt, const Word& pattern)
+    {
+        for(unsigned short i = 0; i < 5; ++i)
+        {
+            const char charA = attempt[i];
+            const char charP = pattern[i];
+            if(charP == '-')
+            {
+                for(AlphabetSet& aSet : letterMap)
+                {
+                    if(aSet.size() != 1)
+                        aSet.erase(charA);
+                }
+            }
+            else if(charP == 'o')
+            {
+                letterMap[i].erase(charA);
+                mustHaveLetterSet[charA - 'A']++;
+            }
+            else
+            {
+                letterMap[i] = {charA};
+                mustHaveLetterSet[charA - 'A']++;
+            }
+        }
+        pruneAllowedWords();
+    }
+
+    void pruneAllowedWords()
+    {
+        std::vector<Word> newAllowedWords;
+        std::vector<Word> newTargetWords;
+
+        newAllowedWords.reserve(allowedWords.size());
+        std::copy_if(allowedWords.begin(), allowedWords.end(), std::back_inserter(newAllowedWords),[this](const Word& allowed)
+        {
+            return checkTargetWordAgainstMap(allowed);
+        });
+        allowedWords.swap(newAllowedWords);
+
+        newTargetWords.reserve(targetWords.size());
+        std::copy_if(targetWords.begin(), targetWords.end(), std::back_inserter(newTargetWords),[this](const Word& target)
+        {
+            return checkTargetWordAgainstMap(target);
+        });
+        targetWords.swap(newTargetWords);
+
+    }
+
+    void targetWordsOnly()
+    {
+        allowedWords = targetWords;
     }
 
 
 
 private:
+    inline const Word& getAllowed(unsigned short index)
+    {
+        return allowedWords[index];
+    }
+
+    inline unsigned short getAllowedIndex(const Word& allowed)
+    {
+        unsigned short result = 0;
+        auto it = std::find(allowedWords.begin(), allowedWords.end(), allowed);
+        if(it != allowedWords.end())
+        {
+            result = static_cast<unsigned short>(it - allowedWords.begin());
+        }
+        return result;
+    }
+
+    inline const Word& getTarget(unsigned short index)
+    {
+        return targetWords[index];
+    }
 
     static const AlphabetSet fullAlphabet;
 
     LetterMap letterMap;
-    std::unordered_map<Word, std::unordered_map<Word, std::atomic<unsigned short>>> wordMap;
-    std::unordered_map<Word, std::unordered_map<Word, float>> infoMap;
+    std::array<unsigned char, 26> mustHaveLetterSet;
+    std::vector<std::unordered_map<Word, unsigned short>> wordMap;
+    std::vector<float> infoMap;
 
-    const std::vector<Word>& allowedWords;
-    const std::vector<Word>& targetWords;
+    std::vector<Word> allowedWords;
+    std::vector<Word> targetWords;
 };
 
 
