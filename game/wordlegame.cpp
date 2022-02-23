@@ -139,7 +139,7 @@ int main(int argc, char** argv)
                 }
                 ++round;
             }
-            if(round == 6)
+            if(round > 6)
             {
                 if(machine)
                 {

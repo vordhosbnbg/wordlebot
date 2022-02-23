@@ -49,6 +49,6 @@ std::vector<T> parseFile(const std::string& filename, bool silent = false, size_
 template<class T>
 bool writeToFile(const T& object, const std::string& filename, bool silent = true)
 {
-
+    return 0;
 }
 

@@ -6,7 +6,6 @@
 #include <map>
 #include <bitset>
 #include <cmath>
-#include <execution>
 #include <iostream>
 #include "FixedString.h"
 #include "threadpool.h"
@@ -180,12 +179,14 @@ public:
             else if(charP == 'o')
             {
                 letterMap[i].erase(charA);
-                mustHaveLetterSet[charA - 'A']++;
+                if(mustHaveLetterSet[charA - 'A'] == 0)
+                    mustHaveLetterSet[charA - 'A']++;
             }
             else
             {
                 letterMap[i] = {charA};
-                mustHaveLetterSet[charA - 'A']++;
+                if(mustHaveLetterSet[charA - 'A'] == 0)
+                        mustHaveLetterSet[charA - 'A']++;
             }
         }
         pruneAllowedWords();
