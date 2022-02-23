@@ -28,6 +28,7 @@ public:
         targetWords(targetList)
     {
         letterMap.fill(fullAlphabet);
+        mustHaveLetterSet.fill(0);
     }
 
     inline bool checkTargetWordAgainstMap(const Word& target)
@@ -42,7 +43,8 @@ public:
                 return false;
         }
 
-        satisfiesMusthaveRules(target);
+        if(!satisfiesMusthaveRules(target))
+            return false;
 
         return true;
     }
